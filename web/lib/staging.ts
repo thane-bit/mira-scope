@@ -49,6 +49,9 @@ export interface StageMeta {
   flakes: { piece: number; why: string }[];
   fullChars: number;
   extractedText: string;
+  textHash?: string;
+  chars?: number;
+  fromLibrary?: boolean;
   /** malformed records the grammar check dropped before this draft */
   droppedNodes: number;
   /** duplicates folded (mechanical + consolidation) and cross-piece relations added */
@@ -96,6 +99,9 @@ export function buildStageModel(r: ExtractResponse): StageModel {
       flakes: r.flakes ?? [],
       fullChars: r.extractedText?.length ?? 0,
       extractedText: r.extractedText ?? "",
+      textHash: r.textHash,
+      chars: r.chars,
+      fromLibrary: r.fromLibrary,
       droppedNodes: r.dropped?.nodes?.length ?? 0,
       folded: (r.mergeFolded ?? 0) + (r.consolidation?.recordsFolded ?? 0),
       edgesAdded: r.consolidation?.edgesAdded ?? 0,

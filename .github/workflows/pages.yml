@@ -5,6 +5,7 @@ name: pages
 on:
   push:
     branches: [main]
+    paths-ignore: ["library/**"]
   workflow_dispatch:
 
 permissions:
@@ -29,6 +30,7 @@ jobs:
         env:
           # project pages live at https://<user>.github.io/<repo>/
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          NEXT_PUBLIC_LIBRARY_REPO: ${{ github.repository }}
         run: |
           npm ci --no-audit --no-fund
           npm run build

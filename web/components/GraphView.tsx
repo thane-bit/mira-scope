@@ -19,6 +19,7 @@ import { grammarOf } from "../lib/staging.ts";
 import { nodeOrderOf, NODE_STYLE, EDGE_COLOR } from "../lib/palette.ts";
 import type { OntologyId } from "../../src/ontology.ts";
 import { computePositions, drawableEdges, layoutStage, structureKey, type MiraNodeData } from "../lib/layout.ts";
+import { computeTreeBoxes, treeKey } from "../lib/tree-layout.ts";
 
 export type Selection = { kind: "node" | "edge"; id: string } | null;
 
@@ -29,6 +30,21 @@ const truncate = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "
  *  lit by hover/selection. */
 function MiraNode({ data, selected }: NodeProps<Node<MiraNodeData>>) {
   const style = NODE_STYLE[data.type as keyof typeof NODE_STYLE] ?? NODE_STYLE.Claim;
+  if (data.tree) {
+    // outcomes tree: a card, parent on the left. Edges run child → parent, so the
+    // SOURCE handle (child) is on the card's left and the TARGET handle (parent) on its right.
+    return (
+      <div
+        className={selected ? "tree-card selected" : "tree-card"}
+        style={{ width: data.tree.w, height: data.tree.h, borderLeftColor: style.color, color: style.color }}
+      >
+        <Handle type="target" position={Position.Right} className="mira-handle" />
+        <div className="tree-type" style={{ color: style.color }}>{style.label}{data.added ? " ＋" : ""}</div>
+        <div className="tree-text">{data.needsText ? <em>(empty)</em> : data.text}</div>
+        <Handle type="source" position={Position.Left} className="mira-handle" />
+      </div>
+    );
+  }
   return (
     <div
       className={selected ? "mira-node selected" : "mira-node"}
@@ -94,8 +110,15 @@ export default function GraphView({
   const [zoomedIn, setZoomedIn] = useState(true);
 
   // positions depend only on the drawable STRUCTURE — text edits never relayout
-  const structKey = structureKey(nodes, edges, validation);
+  const isTree = ontology === "outcomes";
+  const structKey = isTree ? treeKey(nodes, edges, validation) : structureKey(nodes, edges, validation);
+  const treeBoxes = useMemo(
+    () => (isTree ? computeTreeBoxes(nodes, edges, validation) : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [structKey, isTree],
+  );
   const positions = useMemo(() => {
+    if (isTree) return new Map<string, { x: number; y: number }>();
     const live = nodes.filter((n) => !n.dropped).map((n) => n.id);
     const springs = drawableEdges(nodes, edges, validation).map(
       (e) => [e.subject, e.object] as [string, string],
@@ -105,8 +128,8 @@ export default function GraphView({
   }, [structKey]);
 
   const flow = useMemo(
-    () => layoutStage(nodes, edges, validation, positions),
-    [nodes, edges, validation, positions],
+    () => layoutStage(nodes, edges, validation, positions, treeBoxes),
+    [nodes, edges, validation, positions, treeBoxes],
   );
 
   const styledNodes = useMemo(
@@ -124,13 +147,14 @@ export default function GraphView({
   );
 
   return (
-    <div className={zoomedIn ? "canvas-flow show-labels" : "canvas-flow"}>
+    <div className={(zoomedIn ? "canvas-flow show-labels" : "canvas-flow") + (isTree ? " tree-mode" : "")}>
       <ReactFlow
         nodes={styledNodes}
         edges={styledEdges}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.15 }}
+        key={isTree ? "tree" : "force"}
         minZoom={0.1}
         maxZoom={2.5}
         proOptions={{ hideAttribution: true }}

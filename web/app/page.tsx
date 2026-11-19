@@ -7,6 +7,14 @@ import InputForm, { type RunPayload } from "../components/InputForm.tsx";
 import StagePanel from "../components/StagePanel.tsx";
 import { checkAnchor } from "../lib/types.ts";
 import { extractInBrowser } from "../lib/extract-client.ts";
+import {
+  entryToResponse,
+  findCached,
+  loadEntry,
+  saveEntry,
+  LIBRARY_REPO,
+  type LibraryEntry,
+} from "../lib/library.ts";
 import { zipFiles } from "../../src/zip.ts";
 import {
   buildStageModel,
@@ -31,6 +39,9 @@ export default function Home() {
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // GitHub token for saving to the library — memory only, never persisted
+  const [ghToken, setGhToken] = useState("");
+  const [libraryTick, setLibraryTick] = useState(0); // bump to refresh the library list
   const [selection, setSelection] = useState<Selection>(null);
   // The over-the-limit submission panel: the refused paper + review-inbox state.
 
@@ -62,6 +73,46 @@ export default function Home() {
     setModel((prev) => (prev ? fn(prev) : prev));
   }, []);
 
+  /** Commit the current (edited) graph to the GitHub library. */
+  const saveToLibrary = useCallback(async (m: StageModel, token: string): Promise<string> => {
+    if (!m.meta.textHash) throw new Error("This draft has no paper hash, so it can't be filed in the library.");
+    const out = exportGraph(m, validate(m), new Date().toISOString());
+    const g = out.graph;
+    const entry: LibraryEntry = {
+      version: 1,
+      ontology: m.ontology,
+      source: m.meta.source,
+      textHash: m.meta.textHash,
+      chars: m.meta.chars ?? 0,
+      savedAt: new Date().toISOString(),
+      models: m.meta.models,
+      paper: g.paper,
+      nodes: g.nodes as LibraryEntry["nodes"],
+      edges: g.edges as LibraryEntry["edges"],
+    };
+    const name = await saveEntry(token, entry);
+    setLibraryTick((t) => t + 1);
+    return name;
+  }, []);
+
+  const loadFromLibrary = useCallback(async (name: string) => {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    setSelection(null);
+    setProgress("Loading from the library…");
+    try {
+      const entry = await loadEntry(name);
+      setModel(buildStageModel(entryToResponse(entry)));
+      setNotice("Loaded from the library — no model call. Anchor quotes are shown but not re-verified (paper full text isn't stored).");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setProgress(null);
+      setBusy(false);
+    }
+  }, []);
+
   const run = useCallback(async (p: RunPayload) => {
     setBusy(true);
     setElapsed(0);
@@ -70,8 +121,26 @@ export default function Home() {
     setSelection(null);
     setProgress("Preparing…");
     try {
-      const data = await extractInBrowser(p, setProgress);
-      setModel(buildStageModel(data));
+      const data = await extractInBrowser(p, setProgress, async (hash) => {
+        const hit = await findCached(hash, p.ontology);
+        if (!hit) return null;
+        return entryToResponse(await loadEntry(hit.name));
+      });
+      const built = buildStageModel(data);
+      setModel(built);
+      if (data.fromLibrary) {
+        setNotice("Found this paper in your library — loaded the saved graph, no model call.");
+      } else if (p.ghToken.trim()) {
+        setProgress("Saving to the GitHub library…");
+        try {
+          const name = await saveToLibrary(built, p.ghToken.trim());
+          setNotice(`Saved to the library as ${name} (${LIBRARY_REPO}).`);
+        } catch (e) {
+          setNotice(`Extracted, but not saved to the library: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      } else {
+        setNotice("Not saved to the library — add a GitHub token on the start screen to keep every extraction.");
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setModel(null);
@@ -79,7 +148,7 @@ export default function Home() {
       setProgress(null);
       setBusy(false);
     }
-  }, []);
+  }, [saveToLibrary]);
 
   // Draw-to-connect: pick the (only) legal relation for the dragged direction.
   const handleConnect = useCallback((subject: string, object: string) => {
@@ -189,6 +258,27 @@ export default function Home() {
               ← new
             </button>
           )}
+          {model && (
+            <button
+              className="compose-new"
+              disabled={busy}
+              title={ghToken.trim() ? `Save this graph (with your edits) to ${LIBRARY_REPO}` : "Add a GitHub token on the start screen (← new) to save"}
+              onClick={async () => {
+                if (!ghToken.trim()) {
+                  setNotice("To save, go ← new and paste a GitHub token first — it's kept in memory only, so your draft stays here once you reload it from the library.");
+                  return;
+                }
+                try {
+                  const name = await saveToLibrary(model, ghToken.trim());
+                  setNotice(`Saved to the library as ${name}.`);
+                } catch (e) {
+                  setNotice(`Not saved: ${e instanceof Error ? e.message : String(e)}`);
+                }
+              }}
+            >
+              ↑ Library
+            </button>
+          )}
           <button
             className="compose-new export-mira"
             disabled={!model || !validation?.publishable}
@@ -272,7 +362,14 @@ export default function Home() {
                 ) : (
                   <>
                     {error && <div className="banner error">{error}</div>}
-                    <InputForm busy={busy} onRun={run} />
+                    <InputForm
+                      busy={busy}
+                      onRun={run}
+                      ghToken={ghToken}
+                      onGhToken={setGhToken}
+                      libraryTick={libraryTick}
+                      onOpenLibrary={loadFromLibrary}
+                    />
                   </>
                 )}
               </div>

@@ -5,7 +5,9 @@ name: ci
 
 on:
   push:
+    paths-ignore: ["library/**"]
   pull_request:
+    paths-ignore: ["library/**"]
 
 jobs:
   test:

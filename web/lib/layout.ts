@@ -19,6 +19,7 @@
  */
 import { MarkerType, type Edge as FlowEdge, type Node as FlowNode } from "@xyflow/react";
 import type { StageNode, StageEdge, Validation } from "./staging.ts";
+import type { TreeBox } from "./tree-layout.ts";
 import { EDGE_COLOR } from "./palette.ts";
 
 export interface MiraNodeData extends Record<string, unknown> {
@@ -29,6 +30,8 @@ export interface MiraNodeData extends Record<string, unknown> {
   added: boolean;
   /** dot diameter in px (2r) — the viewer's degree-based sizing */
   size: number;
+  /** tree mode (outcomes): draw as a card of this size instead of a dot */
+  tree?: { w: number; h: number };
 }
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
@@ -188,6 +191,7 @@ export function layoutStage(
   edges: StageEdge[],
   v: Validation,
   positions: Map<string, { x: number; y: number }>,
+  treeBoxes?: Map<string, TreeBox>,
 ): { nodes: FlowNode<MiraNodeData>[]; edges: FlowEdge[] } {
   const live = nodes.filter((n) => !n.dropped);
   const draw = drawableEdges(nodes, edges, v);
@@ -199,6 +203,15 @@ export function layoutStage(
   }
 
   const flowNodes: FlowNode<MiraNodeData>[] = live.map((n) => {
+    const box = treeBoxes?.get(n.id);
+    if (box) {
+      return {
+        id: n.id,
+        type: "mira",
+        position: { x: box.x, y: box.y },
+        data: { nodeId: n.id, type: n.type, text: n.text, needsText: !n.text.trim(), added: !!n.added, size: 0, tree: { w: box.w, h: box.h } },
+      };
+    }
     const p = positions.get(n.id) ?? { x: CX, y: CY };
     const base = n.type === "Claim" ? 13 : 9;
     const r = base + Math.min(degree.get(n.id) ?? 0, 8) * 1.5;
@@ -216,7 +229,7 @@ export function layoutStage(
       id: e.id,
       source: e.subject,
       target: e.object,
-      type: "straight",
+      type: treeBoxes ? "smoothstep" : "straight",
       style: { stroke: color, strokeWidth: 1.4, opacity: 0.8 },
       markerEnd: { type: MarkerType.ArrowClosed, color, width: 11, height: 11 },
     };

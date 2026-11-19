@@ -563,3 +563,44 @@ main { flex: 1; position: relative; min-height: 0; z-index: 2; }
 }
 .react-flow__controls button:hover { background: var(--raise); }
 .react-flow__edge-textbg { fill: var(--ink); }
+
+/* ---------------- outcomes tree: cards, Outcome on the left ---------------- */
+.tree-card {
+  position: relative;
+  box-sizing: border-box;
+  padding: 7px 10px 8px 10px;
+  background: var(--ink-2);
+  border: 1px solid var(--line-2);
+  border-left: 4px solid currentColor;
+  border-radius: 4px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.tree-card:hover { background: var(--raise); }
+.tree-card.selected { box-shadow: 0 0 0 1.5px currentColor, 0 0 14px -2px currentColor; }
+.tree-type {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.tree-text {
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tree-text em { color: var(--bad); font-style: normal; }
+.tree-card .mira-handle { opacity: 0.6; }
+
+/* keep the graph (and its legend) clear of the docked staging rail */
+.canvas-flow { left: 342px; }
+@media (max-width: 760px) { .canvas-flow { left: 0; } }
+
+/* library list on the start screen */
+.lib-list { display: flex; flex-direction: column; gap: 0.3rem; max-height: 180px; overflow-y: auto; }
+.lib-item { display: flex; justify-content: space-between; gap: 0.8rem; text-align: left; text-transform: none; letter-spacing: 0.02em; }
+.lib-item em { color: var(--dim); font-style: normal; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; }

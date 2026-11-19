@@ -8,6 +8,7 @@ import { decomposeText, PaperTooBigError, type CoreProgress } from "../../src/co
 import type { OntologyId } from "../../src/ontology.ts";
 import { pdfToTextInBrowser } from "./pdf-client.ts";
 import type { ExtractResponse } from "./types.ts";
+import { sha256Hex } from "./library.ts";
 
 const MAX_ECHO_CHARS = 400_000;
 
@@ -33,7 +34,16 @@ export interface ClientRun {
   ontology: OntologyId;
 }
 
-export async function extractInBrowser(p: ClientRun, onStatus: (m: string) => void): Promise<ExtractResponse> {
+/**
+ * `cached`, when given, is asked first with the paper text's hash: if the library
+ * already holds this paper in this ontology it returns the saved graph and no
+ * model call is made.
+ */
+export async function extractInBrowser(
+  p: ClientRun,
+  onStatus: (m: string) => void,
+  cached?: (hash: string) => Promise<ExtractResponse | null>,
+): Promise<ExtractResponse> {
   const apiKey = p.apiKey.trim();
   if (!apiKey) throw new Error("Paste your OpenRouter key first (free at https://openrouter.ai/keys).");
 
@@ -55,6 +65,13 @@ export async function extractInBrowser(p: ClientRun, onStatus: (m: string) => vo
   }
   if (!text.trim()) throw new Error("Provide a file or some pasted text.");
 
+  const textHash = await sha256Hex(text);
+  if (cached) {
+    onStatus("Checking your library for this paper…");
+    const hit = await cached(textHash);
+    if (hit) return hit;
+  }
+
   try {
     const result = await decomposeText(text, {
       apiKey,
@@ -75,6 +92,8 @@ export async function extractInBrowser(p: ClientRun, onStatus: (m: string) => vo
       mergeFolded: result.stats.merge.collapsed,
       consolidation: result.stats.consolidation,
       extractedText: text.slice(0, MAX_ECHO_CHARS),
+      textHash,
+      chars: text.length,
     } as ExtractResponse;
   } catch (e) {
     if (e instanceof PaperTooBigError) {

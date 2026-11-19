@@ -62,6 +62,11 @@ export interface ExtractResponse {
     ungrammaticalEdges: { edge: Edge; why: string }[];
   };
   extractedText: string;
+  /** sha-256 of the paper text (identifies the paper in the library) */
+  textHash?: string;
+  chars?: number;
+  /** true when loaded from the GitHub library instead of extracted */
+  fromLibrary?: boolean;
   /** exact duplicates folded mechanically at merge time */
   mergeFolded?: number;
   /** the consolidation pass's stats (multi-piece papers) */

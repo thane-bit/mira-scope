@@ -51,6 +51,18 @@ npm run dev        # http://localhost:3030
 
 Publish it (GitHub Pages): in the repo go to **Settings → Pages → Build and deployment → Source: GitHub Actions**. The `pages` workflow then builds and deploys on every push to `main`, at `https://<user>.github.io/<repo>/`.
 
+### The outcomes view
+
+Outcomes graphs are drawn as a left-to-right tree: the Outcome is the root on the left and each step of the chain sits one column to its right (Outcome → Solution → Constraint → deeper Solution …), so nesting reads as depth. Arrows point back up the tree (child → parent). Discourse graphs keep the force-directed view.
+
+### The library (saved in GitHub, no re-extracting)
+
+Every graph can be saved to `library/` in this repo as `<slug>-<hash8>.<ontology>.json`. When you extract a paper the site first hashes its text and checks the library; if that paper is already saved in that ontology, it loads the saved graph and makes no model call.
+
+- **Reading** is public and needs nothing (the repo is public).
+- **Saving** needs a GitHub token: GitHub → Settings → Developer settings → Fine-grained tokens → this repo only → *Contents: Read and write*. Paste it on the start screen. It is held in memory only and sent only to api.github.com. The `↑ Library` button saves your edits.
+- **Not stored:** the paper's full text (the library is public). Graphs loaded from the library show their anchor quotes but can't re-verify them.
+
 ## CLI
 
 ```bash

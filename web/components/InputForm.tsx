@@ -1,22 +1,44 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useEffect } from "react";
 import { ONTOLOGIES, type OntologyId } from "../../src/ontology.ts";
+import { listLibrary, LIBRARY_REPO, type LibraryItem } from "../lib/library.ts";
 
 export interface RunPayload {
   text: string;
   file: File | null;
   apiKey: string;
   ontology: OntologyId;
+  ghToken: string;
 }
 
 export default function InputForm({
   busy,
   onRun,
+  ghToken,
+  onGhToken,
+  libraryTick,
+  onOpenLibrary,
 }: {
   busy: boolean;
   onRun: (p: RunPayload) => void;
+  ghToken: string;
+  onGhToken: (t: string) => void;
+  libraryTick: number;
+  onOpenLibrary: (name: string) => void;
 }) {
+  const [library, setLibrary] = useState<LibraryItem[] | null>(null);
+  const [libraryErr, setLibraryErr] = useState(false);
+  useEffect(() => {
+    let live = true;
+    listLibrary()
+      .then((items) => live && (setLibrary(items), setLibraryErr(false)))
+      .catch(() => live && setLibraryErr(true));
+    return () => {
+      live = false;
+    };
+  }, [libraryTick]);
   const [mode, setMode] = useState<"paste" | "upload">("paste");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -31,7 +53,7 @@ export default function InputForm({
       className="form"
       onSubmit={(e) => {
         e.preventDefault();
-        if (canRun) onRun({ text, file, apiKey, ontology });
+        if (canRun) onRun({ text, file, apiKey, ontology, ghToken });
       }}
     >
       <div className="field">
@@ -100,9 +122,43 @@ export default function InputForm({
         </span>
       </label>
 
+      <label className="field">
+        <span>GitHub token — to save every extraction to your library <em className="muted">(optional)</em></span>
+        <input
+          type="password"
+          placeholder="github_pat_…  (fine-grained: this repo only, Contents read & write)"
+          value={ghToken}
+          onChange={(e) => onGhToken(e.target.value)}
+          autoComplete="off"
+        />
+        <span className="muted tiny">
+          Kept in memory only and sent only to api.github.com. Without it the site still works; graphs just aren&apos;t saved. Saved graphs are public in {LIBRARY_REPO}.
+        </span>
+      </label>
+
       <button className="run" type="submit" disabled={!canRun}>
         {busy ? "Extracting…" : `Extract ${ontology === "outcomes" ? "outcomes" : "discourse"} graph`}
       </button>
+      <div className="field">
+        <span>Saved library {library ? `(${library.length})` : ""}</span>
+        {libraryErr ? (
+          <span className="muted tiny">Library unavailable right now (GitHub rate limit?). Try again in a minute.</span>
+        ) : library === null ? (
+          <span className="muted tiny">Loading…</span>
+        ) : library.length === 0 ? (
+          <span className="muted tiny">Nothing saved yet. Extract a paper with a GitHub token and it will appear here.</span>
+        ) : (
+          <div className="lib-list">
+            {library.map((it) => (
+              <button key={it.name} type="button" className="tab lib-item" disabled={busy} onClick={() => onOpenLibrary(it.name)} title={it.name}>
+                <span>{it.slug.replace(/-/g, " ")}</span>
+                <em>{it.ontology === "outcomes" ? "outcomes" : "discourse"}</em>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <p className="muted tiny">Pinned free model · one call per paper · draft for review · nothing is published or signed.</p>
     </form>
   );
