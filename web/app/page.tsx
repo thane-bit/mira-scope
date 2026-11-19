@@ -280,7 +280,7 @@ export default function Home() {
         <div className="mark">
           <span className="mark-glyph" aria-hidden="true" />
           <div className="mark-text">
-            <h1>Graph Toggle</h1>
+            <h1>MIRA Scope</h1>
             <p>graph extractor · staging viewer</p>
           </div>
         </div>
@@ -471,7 +471,7 @@ export default function Home() {
           staging viewer · click a node or relation to edit · drag dot → dot to draw a relation ·
           esc closes the inspector
         </span>
-        <span>graph-toggle · nothing is published or signed</span>
+        <span>mira-scope · nothing is published or signed</span>
       </footer>
     </div>
   );

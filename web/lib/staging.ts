@@ -244,7 +244,7 @@ export function exportGraph(m: StageModel, v: Validation, createdAt: string) {
   }
   const { jsonld, report } = toMiraJsonld(
     { nodes, edges, paper: m.paper },
-    { slug, generatedAt: createdAt, creatorName: "graph-toggle web editor" },
+    { slug, generatedAt: createdAt, creatorName: "mira-scope web editor" },
   );
   return { kind: "jsonld" as const, slug, jsonld, report, graph };
 }

@@ -1,4 +1,4 @@
-# Graph Toggle
+# MIRA Scope
 
 Turn a research paper into a **reviewable graph**, in whichever ontology you need:
 

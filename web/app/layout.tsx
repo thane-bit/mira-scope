@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Graph Toggle",
+  title: "MIRA Scope",
   description: "Turn a research paper into a validated MIRA graph — questions, claims, evidence, studies, protocols, sources, requests — for human review.",
 };
 
