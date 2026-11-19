@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import GraphView, { type Selection } from "../components/GraphView.tsx";
 import Inspector from "../components/Inspector.tsx";
 import InputForm, { type RunPayload } from "../components/InputForm.tsx";
 import StagePanel from "../components/StagePanel.tsx";
 import { checkAnchor } from "../lib/types.ts";
 import { extractInBrowser } from "../lib/extract-client.ts";
+import type { OntologyId } from "../../src/ontology.ts";
 import {
   entryToResponse,
   findCached,
@@ -41,11 +42,20 @@ export default function Home() {
   const [notice, setNotice] = useState<string | null>(null);
   // GitHub token for saving to the library — memory only, never persisted
   const [ghToken, setGhToken] = useState("");
+  // OpenRouter key — memory only; kept so the ontology toggle can extract the other graph
+  const [apiKey, setApiKey] = useState("");
+  // both ontologies for the CURRENT paper, so toggling is instant and edits are kept
+  const [drafts, setDrafts] = useState<Partial<Record<OntologyId, StageModel>>>({});
   const [libraryTick, setLibraryTick] = useState(0); // bump to refresh the library list
   const [selection, setSelection] = useState<Selection>(null);
   // The over-the-limit submission panel: the refused paper + review-inbox state.
 
   const validation = useMemo(() => (model ? validate(model) : null), [model]);
+
+  // keep the stored draft for the open ontology in step with edits
+  useEffect(() => {
+    if (model) setDrafts((d) => (d[model.ontology] === model ? d : { ...d, [model.ontology]: model }));
+  }, [model]);
   const anchored = useMemo(() => {
     if (!model) return 0;
     return model.nodes.filter(
@@ -103,7 +113,9 @@ export default function Home() {
     setProgress("Loading from the library…");
     try {
       const entry = await loadEntry(name);
-      setModel(buildStageModel(entryToResponse(entry)));
+      const loaded = buildStageModel(entryToResponse(entry));
+      setModel(loaded);
+      setDrafts({ [loaded.ontology]: loaded });
       setNotice("Loaded from the library — no model call. Anchor quotes are shown but not re-verified (paper full text isn't stored).");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -113,42 +125,129 @@ export default function Home() {
     }
   }, []);
 
+  // Guards background work: bumped on every new run / reset so a late result
+  // from an abandoned paper can't land on the next one.
+  const runId = useRef(0);
+  // ontology currently being extracted in the background (toggle shows it as pending)
+  const [pending, setPending] = useState<OntologyId | null>(null);
+
+  /** Get the graph for `target` of the paper `base` was extracted from — the
+   *  GitHub library first, else a fresh extraction from the paper text. Saves
+   *  to the library when a token is set. Never touches `model`. */
+  const buildOther = useCallback(
+    async (target: OntologyId, base: StageModel, onStatus: (m: string) => void): Promise<{ model: StageModel; note: string }> => {
+      if (base.meta.textHash) {
+        onStatus(`Checking your library for the ${target} graph…`);
+        const hit = await findCached(base.meta.textHash, target);
+        if (hit) {
+          const m = buildStageModel(entryToResponse(await loadEntry(hit.name)));
+          return { model: m, note: `Loaded the saved ${target} graph from the library — no model call.` };
+        }
+      }
+      const text = base.meta.extractedText;
+      if (!text) throw new Error(`This graph came from the library, so the paper text isn't in the page. Go ← new and upload the paper once to extract the ${target} graph.`);
+      if (!apiKey.trim()) throw new Error("Paste your OpenRouter key on the start screen (← new) to extract the other graph.");
+      const data = await extractInBrowser({ text, file: null, apiKey, ontology: target }, onStatus);
+      data.source = base.meta.source;
+      const built = buildStageModel(data);
+      let note = `The ${target} graph is ready.`;
+      if (ghToken.trim()) {
+        try {
+          const name = await saveToLibrary(built, ghToken.trim());
+          note = `The ${target} graph is ready and saved to the library as ${name}.`;
+        } catch (e) {
+          note = `The ${target} graph is ready, but not saved: ${e instanceof Error ? e.message : String(e)}`;
+        }
+      }
+      return { model: built, note };
+    },
+    [apiKey, ghToken, saveToLibrary],
+  );
+
+  /** One button, both graphs: outcomes first (shown as soon as it lands), then
+   *  the discourse graph in the background. */
   const run = useCallback(async (p: RunPayload) => {
+    const id = ++runId.current;
     setBusy(true);
     setElapsed(0);
     setError(null);
     setNotice(null);
     setSelection(null);
+    setDrafts({});
+    setPending(null);
     setProgress("Preparing…");
+    let first: StageModel | null = null;
     try {
-      const data = await extractInBrowser(p, setProgress, async (hash) => {
-        const hit = await findCached(hash, p.ontology);
+      const data = await extractInBrowser({ ...p, ontology: "outcomes" }, setProgress, async (hash) => {
+        const hit = await findCached(hash, "outcomes");
         if (!hit) return null;
         return entryToResponse(await loadEntry(hit.name));
       });
-      const built = buildStageModel(data);
-      setModel(built);
-      if (data.fromLibrary) {
-        setNotice("Found this paper in your library — loaded the saved graph, no model call.");
-      } else if (p.ghToken.trim()) {
+      first = buildStageModel(data);
+      setModel(first);
+      setDrafts({ outcomes: first });
+      if (!data.fromLibrary && p.ghToken.trim()) {
         setProgress("Saving to the GitHub library…");
         try {
-          const name = await saveToLibrary(built, p.ghToken.trim());
-          setNotice(`Saved to the library as ${name} (${LIBRARY_REPO}).`);
+          await saveToLibrary(first, p.ghToken.trim());
         } catch (e) {
-          setNotice(`Extracted, but not saved to the library: ${e instanceof Error ? e.message : String(e)}`);
+          setNotice(`Not saved to the library: ${e instanceof Error ? e.message : String(e)}`);
         }
-      } else {
-        setNotice("Not saved to the library — add a GitHub token on the start screen to keep every extraction.");
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setModel(null);
-    } finally {
       setProgress(null);
       setBusy(false);
+      return;
     }
-  }, [saveToLibrary]);
+    setProgress(null);
+    setBusy(false);
+
+    // the other ontology, in the background
+    setPending("discourse");
+    try {
+      const { model: m, note } = await buildOther("discourse", first, (msg) => {
+        if (runId.current === id) setNotice(`Outcomes graph ready. Now the discourse graph — ${msg}`);
+      });
+      if (runId.current !== id) return;
+      setDrafts((d) => ({ ...d, discourse: m }));
+      setNotice(note);
+    } catch (e) {
+      if (runId.current === id) setNotice(`Outcomes graph ready. The discourse graph failed: ${e instanceof Error ? e.message : String(e)} — click Discourse to retry.`);
+    } finally {
+      if (runId.current === id) setPending(null);
+    }
+  }, [saveToLibrary, buildOther]);
+
+  /** Flip the open paper between its two graphs (edits are kept). If the other
+   *  graph doesn't exist yet (a failed background run, or a library load), build it. */
+  const switchOntology = useCallback(
+    async (target: OntologyId) => {
+      if (!model || busy || pending || model.ontology === target) return;
+      setSelection(null);
+      const have = drafts[target];
+      if (have) {
+        setModel(have);
+        setNotice(null);
+        return;
+      }
+      const id = runId.current;
+      setPending(target);
+      try {
+        const { model: m, note } = await buildOther(target, model, (msg) => setNotice(msg));
+        if (runId.current !== id) return;
+        setDrafts((d) => ({ ...d, [target]: m }));
+        setModel(m);
+        setNotice(note);
+      } catch (e) {
+        setNotice(e instanceof Error ? e.message : String(e)); // the current graph stays open
+      } finally {
+        if (runId.current === id) setPending(null);
+      }
+    },
+    [model, busy, pending, drafts, buildOther],
+  );
 
   // Draw-to-connect: pick the (only) legal relation for the dragged direction.
   const handleConnect = useCallback((subject: string, object: string) => {
@@ -198,7 +297,10 @@ export default function Home() {
   }, [model, validation]);
 
   const reset = useCallback(() => {
+    runId.current++;
+    setPending(null);
     setModel(null);
+    setDrafts({});
     setSelection(null);
     setError(null);
     setNotice(null);
@@ -253,6 +355,24 @@ export default function Home() {
         </div>
 
         <div className="mast-actions">
+          {model && (
+            <div className="onto-switch" role="radiogroup" aria-label="Graph type for this paper">
+              {(["discourse", "outcomes"] as OntologyId[]).map((id) => (
+                <button
+                  key={id}
+                  role="radio"
+                  aria-checked={model.ontology === id}
+                  className={model.ontology === id ? "active" : ""}
+                  disabled={busy || (!!pending && model.ontology !== id)}
+                  title={id === "outcomes" ? "Outcome → Solution → Constraint tree" : "Questions, claims, evidence (MIRA)"}
+                  onClick={() => switchOntology(id)}
+                >
+                  {id === "outcomes" ? "Outcomes" : "Discourse"}
+                  {pending === id ? " …" : ""}
+                </button>
+              ))}
+            </div>
+          )}
           {model && (
             <button className="compose-new" onClick={reset} title="Discard this draft and start over">
               ← new
@@ -365,6 +485,8 @@ export default function Home() {
                     <InputForm
                       busy={busy}
                       onRun={run}
+                      apiKey={apiKey}
+                      onApiKey={setApiKey}
                       ghToken={ghToken}
                       onGhToken={setGhToken}
                       libraryTick={libraryTick}

@@ -604,3 +604,12 @@ main { flex: 1; position: relative; min-height: 0; z-index: 2; }
 .lib-list { display: flex; flex-direction: column; gap: 0.3rem; max-height: 180px; overflow-y: auto; }
 .lib-item { display: flex; justify-content: space-between; gap: 0.8rem; text-align: left; text-transform: none; letter-spacing: 0.02em; }
 .lib-item em { color: var(--dim); font-style: normal; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; }
+
+/* ontology toggle for the open paper */
+.onto-switch { display: inline-flex; border: 1px solid var(--line-2); border-radius: 4px; overflow: hidden; }
+.onto-switch button {
+  background: transparent; color: var(--dim); border: 0; padding: 0.38rem 0.7rem;
+  font: inherit; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;
+}
+.onto-switch button.active { background: var(--raise); color: var(--claim); }
+.onto-switch button:disabled { cursor: default; opacity: 0.6; }

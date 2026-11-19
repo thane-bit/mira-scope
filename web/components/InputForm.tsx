@@ -2,20 +2,20 @@
 
 import { useRef, useState } from "react";
 import { useEffect } from "react";
-import { ONTOLOGIES, type OntologyId } from "../../src/ontology.ts";
 import { listLibrary, LIBRARY_REPO, type LibraryItem } from "../lib/library.ts";
 
 export interface RunPayload {
   text: string;
   file: File | null;
   apiKey: string;
-  ontology: OntologyId;
   ghToken: string;
 }
 
 export default function InputForm({
   busy,
   onRun,
+  apiKey,
+  onApiKey,
   ghToken,
   onGhToken,
   libraryTick,
@@ -23,6 +23,8 @@ export default function InputForm({
 }: {
   busy: boolean;
   onRun: (p: RunPayload) => void;
+  apiKey: string;
+  onApiKey: (k: string) => void;
   ghToken: string;
   onGhToken: (t: string) => void;
   libraryTick: number;
@@ -42,8 +44,6 @@ export default function InputForm({
   const [mode, setMode] = useState<"paste" | "upload">("paste");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [apiKey, setApiKey] = useState("");
-  const [ontology, setOntology] = useState<OntologyId>("discourse");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const canRun = !busy && apiKey.trim().length > 0 && (mode === "paste" ? text.trim().length > 0 : !!file);
@@ -53,28 +53,9 @@ export default function InputForm({
       className="form"
       onSubmit={(e) => {
         e.preventDefault();
-        if (canRun) onRun({ text, file, apiKey, ontology, ghToken });
+        if (canRun) onRun({ text, file, apiKey, ghToken });
       }}
     >
-      <div className="field">
-        <span>Graph type</span>
-        <div className="tabs" role="radiogroup" aria-label="Graph type">
-          {(Object.keys(ONTOLOGIES) as OntologyId[]).map((id) => (
-            <button
-              key={id}
-              type="button"
-              role="radio"
-              aria-checked={ontology === id}
-              className={ontology === id ? "tab active" : "tab"}
-              onClick={() => setOntology(id)}
-            >
-              {ONTOLOGIES[id].label}
-            </button>
-          ))}
-        </div>
-        <span className="muted tiny">{ONTOLOGIES[ontology].blurb}</span>
-      </div>
-
       <div className="tabs">
         <button type="button" className={mode === "paste" ? "tab active" : "tab"} onClick={() => setMode("paste")}>
           Paste text
@@ -114,7 +95,7 @@ export default function InputForm({
           type="password"
           placeholder="sk-or-…  (free at openrouter.ai/keys)"
           value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
+          onChange={(e) => onApiKey(e.target.value)}
           autoComplete="off"
         />
         <span className="muted tiny">
@@ -137,7 +118,7 @@ export default function InputForm({
       </label>
 
       <button className="run" type="submit" disabled={!canRun}>
-        {busy ? "Extracting…" : `Extract ${ontology === "outcomes" ? "outcomes" : "discourse"} graph`}
+        {busy ? "Extracting…" : "Extract graphs"}
       </button>
       <div className="field">
         <span>Saved library {library ? `(${library.length})` : ""}</span>
@@ -159,7 +140,7 @@ export default function InputForm({
         )}
       </div>
 
-      <p className="muted tiny">Pinned free model · one call per paper · draft for review · nothing is published or signed.</p>
+      <p className="muted tiny">One paper becomes both an outcomes graph and a discourse graph (two model calls, roughly 1–3 min each) — switch between them afterwards. Pinned free model · draft for review · nothing is published or signed.</p>
     </form>
   );
 }
