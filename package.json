@@ -1,0 +1,37 @@
+{
+  "name": "graph-toggle",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Turn a research paper into a graph you can toggle between two ontologies: a discourse graph (MIRA / Discourse Graphs, exported as JSON-LD) or a DSV outcomes graph (exported as an Obsidian vault). Web UI + CLI. Derived from MIRA-science/MIRA-extraction (SciOS).",
+  "keywords": [
+    "discourse-graph",
+    "extraction",
+    "json-ld",
+    "llm",
+    "mira",
+    "obsidian",
+    "ontology",
+    "outcomes-graph",
+    "pdf",
+    "research-papers",
+    "science"
+  ],
+  "scripts": {
+    "extract": "tsx bin/cli.ts",
+    "test": "tsx test/decompose.test.ts && tsx test/outcomes.test.ts",
+    "typecheck": "tsc --noEmit",
+    "fixture": "tsx scripts/make-fixture.ts"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^6.0.227"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  },
+  "engines": {
+    "node": ">=18.18"
+  }
+}

@@ -1,0 +1,15 @@
+Vendored from github.com/MIRA-science/schema
+Pinned commit: 483f0b21480c0f4ced9c1519fc0f6df2b8617cfe  (main, 2026-08-01)
+
+Files: mira.yaml discoursegraphs_base.yaml sioc.yaml dct.yaml prov.yaml
+       schemaorg.yaml rdf.yaml mira.shacl mira.jsonld mira.ttl sampleData.json
+
+Reproduce:  make vendor   (from schema/)
+or by hand:
+  for f in <files above>; do
+    curl -fsSL "https://raw.githubusercontent.com/MIRA-science/schema/<SHA>/$f" -o "vendor/$f"
+  done
+
+To move the pin: update SHA in schema/Makefile, re-run `make vendor`, then
+`make validate` — and re-check the known-quirk list in schema/validate.py
+against the new generated shapes.
