@@ -93,8 +93,8 @@ async function callOnce(messages: ChatMessage[], o: Required<Pick<TransportOptio
       headers: {
         Authorization: "Bearer " + o.apiKey,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/MIRA-science/MIRA-extraction",
-        "X-Title": "MIRA-extraction",
+        "HTTP-Referer": "https://github.com/thane-bit/mira-scope",
+        "X-Title": "mira-scope",
       },
       body: JSON.stringify({
         model: o.model,

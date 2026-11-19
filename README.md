@@ -35,16 +35,21 @@ npm install
 cp .env.example .env      # put your OpenRouter key in .env (https://openrouter.ai/keys)
 ```
 
-## Web UI
+## Web UI (static site, bring your own key)
+
+The web app is a fully static site: extraction runs **in the visitor's browser** with their own free [OpenRouter key](https://openrouter.ai/keys). There is no server and no shared key; the paper and key go straight to OpenRouter and nothing is stored.
+
+Choose **Discourse graph** or **Outcomes graph**, paste or upload a paper, extract, review/edit the draft (every record carries a verbatim anchor quote that is checked against the source), then export: `⤓ MIRA` (JSON-LD) or `⤓ Vault` (zip you open in Obsidian).
+
+Run it locally:
 
 ```bash
 cd web
 npm install
-cp .env.local.example .env.local   # same OpenRouter key
-npm run dev                         # http://localhost:3030
+npm run dev        # http://localhost:3030
 ```
 
-Choose **Discourse graph** or **Outcomes graph**, paste or upload a paper, extract, review/edit the draft (every record carries a verbatim anchor quote that is checked against the source), then export: `⤓ MIRA` (JSON-LD) or `⤓ Vault` (zip you open in Obsidian).
+Publish it (GitHub Pages): in the repo go to **Settings → Pages → Build and deployment → Source: GitHub Actions**. The `pages` workflow then builds and deploys on every push to `main`, at `https://<user>.github.io/<repo>/`.
 
 ## CLI
 

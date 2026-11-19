@@ -24,7 +24,7 @@ export default function InputForm({
   const [ontology, setOntology] = useState<OntologyId>("discourse");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const canRun = !busy && (mode === "paste" ? text.trim().length > 0 : !!file);
+  const canRun = !busy && apiKey.trim().length > 0 && (mode === "paste" ? text.trim().length > 0 : !!file);
 
   return (
     <form
@@ -86,19 +86,19 @@ export default function InputForm({
         </div>
       )}
 
-      <details className="advanced">
-        <summary>Options</summary>
-        <label className="field">
-          <span>OpenRouter API key (optional)</span>
-          <input
-            type="password"
-            placeholder="sk-or-…  (else uses server's OPENROUTER_API_KEY)"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            autoComplete="off"
-          />
-        </label>
-      </details>
+      <label className="field">
+        <span>Your OpenRouter API key <em className="req">required</em></span>
+        <input
+          type="password"
+          placeholder="sk-or-…  (free at openrouter.ai/keys)"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          autoComplete="off"
+        />
+        <span className="muted tiny">
+          Runs entirely in your browser. The key and paper go straight to OpenRouter — this site has no server and stores nothing.
+        </span>
+      </label>
 
       <button className="run" type="submit" disabled={!canRun}>
         {busy ? "Extracting…" : `Extract ${ontology === "outcomes" ? "outcomes" : "discourse"} graph`}

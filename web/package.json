@@ -2,7 +2,7 @@
   "name": "mira-graph-extractor-web",
   "version": "0.1.0",
   "private": true,
-  "description": "Web UI for the MIRA Graph Extractor — upload/paste a paper, run extraction server-side, review the proposed graph and verify each record's anchor.",
+  "description": "MIRA Scope \u2014 static web UI: paste a paper and your own OpenRouter key, extract a discourse graph or a DSV outcomes graph in the browser, review, export.",
   "scripts": {
     "predev": "node scripts/copy-pdf-worker.mjs",
     "dev": "next dev -p 3030",
@@ -13,8 +13,6 @@
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.4",
-    "@napi-rs/canvas": "^1.0.0",
-    "@vercel/blob": "^2.8.0",
     "@xyflow/react": "^12.3.0",
     "next": "^15.1.0",
     "pdfjs-dist": "^6.0.227",

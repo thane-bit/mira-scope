@@ -20,7 +20,7 @@ export async function pdfToTextInBrowser(
   // A runtime string URL — not new URL(..., import.meta.url) — so the bundler doesn't try to
   // resolve/inline the externalized pdfjs ESM file at build time. workerPort lets us force a
   // module worker, which the minified .mjs worker requires.
-  pdfjs.GlobalWorkerOptions.workerPort = new Worker("/pdf.worker.min.mjs", { type: "module" });
+  pdfjs.GlobalWorkerOptions.workerPort = new Worker(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/pdf.worker.min.mjs`, { type: "module" });
   const data = new Uint8Array(await file.arrayBuffer());
   const loadingTask = pdfjs.getDocument({ data });
   const doc = await loadingTask.promise;
