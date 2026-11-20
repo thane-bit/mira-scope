@@ -33,7 +33,7 @@ const page = (script, status = 200, extraHeaders = {}) =>
   });
 
 // JSON → safe inline-script literal
-const lit = (v) => JSON.stringify(v).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
+const lit = (v) => JSON.stringify(v).replace(/</g, "\\x3c").replace(/>/g, "\\x3e").replace(/&/g, "\\x26");
 
 const clearCookie = `${COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`;
 

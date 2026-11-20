@@ -8,7 +8,7 @@
  * Set the Worker's URL below (or NEXT_PUBLIC_AUTH_WORKER at build time). Left
  * empty, the site falls back to pasting a token by hand.
  */
-const DEFAULT_AUTH_WORKER = "";
+const DEFAULT_AUTH_WORKER = "https://mira-scope-auth.thane-c65.workers.dev";
 
 export const AUTH_WORKER = (process.env.NEXT_PUBLIC_AUTH_WORKER || DEFAULT_AUTH_WORKER).replace(/\/+$/, "");
 
