@@ -5,7 +5,7 @@ Turn a research paper into a **reviewable graph**, in whichever ontology you nee
 | ontology | what it maps | output |
 |---|---|---|
 | **Discourse graph** | Questions, Claims, Evidence, Studies, Protocols, Source Documents, Requests (the [MIRA](https://www.mira.science/) schema, which builds on [Discourse Graphs](https://discoursegraphs.com/)) | canonical MIRA JSON-LD |
-| **Outcomes graph** | An Outcome pursued by Solutions, blocked by Constraints, unblocked by deeper Solutions, with open questions, evidence, requirements, competitors and tactics attached (the DSV method) | an Obsidian vault (one flat folder of `.md` files) |
+| **Outcomes graph** | An Outcome pursued by Solutions, blocked by Constraints, unblocked by deeper Solutions, with open questions, evidence, requirements, competitors and tactics attached ([DSV's ontology](https://www.deepscienceventures.com/articles/outcomes-graph-a-protocol-for-applied-science-coordination)) | an Obsidian vault (one flat folder of `.md` files) |
 
 ```
 PDF / .txt / .md ──▶ pinned free LLM ──▶ classified graph ──▶ review & edit ──▶ JSON-LD  (discourse)
