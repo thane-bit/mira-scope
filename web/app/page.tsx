@@ -7,6 +7,7 @@ import InputForm, { type RunPayload } from "../components/InputForm.tsx";
 import StagePanel from "../components/StagePanel.tsx";
 import { checkAnchor } from "../lib/types.ts";
 import { extractInBrowser } from "../lib/extract-client.ts";
+import { githubLogin, signInWithGitHub } from "../lib/auth.ts";
 import type { OntologyId } from "../../src/ontology.ts";
 import {
   entryToResponse,
@@ -42,6 +43,7 @@ export default function Home() {
   const [notice, setNotice] = useState<string | null>(null);
   // GitHub token for saving to the library — memory only, never persisted
   const [ghToken, setGhToken] = useState("");
+  const [ghUser, setGhUser] = useState<string | null>(null);
   // OpenRouter key — memory only; kept so the ontology toggle can extract the other graph
   const [apiKey, setApiKey] = useState("");
   // both ontologies for the CURRENT paper, so toggling is instant and edits are kept
@@ -488,7 +490,21 @@ export default function Home() {
                       apiKey={apiKey}
                       onApiKey={setApiKey}
                       ghToken={ghToken}
-                      onGhToken={setGhToken}
+                      onGhToken={(t) => {
+                        setGhToken(t);
+                        if (!t) setGhUser(null);
+                      }}
+                      ghUser={ghUser}
+                      onSignIn={async () => {
+                        setError(null);
+                        try {
+                          const t = await signInWithGitHub();
+                          setGhToken(t);
+                          setGhUser(await githubLogin(t));
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : String(e));
+                        }
+                      }}
                       libraryTick={libraryTick}
                       onOpenLibrary={loadFromLibrary}
                     />

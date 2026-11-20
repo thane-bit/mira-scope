@@ -613,3 +613,7 @@ main { flex: 1; position: relative; min-height: 0; z-index: 2; }
 }
 .onto-switch button.active { background: var(--raise); color: var(--claim); }
 .onto-switch button:disabled { cursor: default; opacity: 0.6; }
+
+/* GitHub sign-in row */
+.signed-in { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; font-size: 0.78rem; color: var(--ok); }
+.signed-in b { color: var(--text); font-weight: 600; }

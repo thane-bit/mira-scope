@@ -1,0 +1,8 @@
+name = "mira-scope-auth"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+# Set these in the Cloudflare dashboard (or `wrangler secret put GITHUB_CLIENT_SECRET`):
+#   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, ALLOWED_ORIGIN
+[vars]
+ALLOWED_ORIGIN = "https://thane-bit.github.io"

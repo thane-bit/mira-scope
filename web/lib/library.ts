@@ -115,7 +115,7 @@ export async function saveEntry(token: string, entry: LibraryEntry): Promise<str
   let sha: string | undefined;
   const cur = await fetch(`${url}?ref=${BRANCH}`, { headers: headers(token) });
   if (cur.ok) sha = ((await cur.json()) as { sha?: string }).sha;
-  else if (cur.status === 401 || cur.status === 403) throw new Error("GitHub rejected the token (needs Contents: read & write on this repo).");
+  else if (cur.status === 401 || cur.status === 403) throw new Error("GitHub rejected the token — it may have expired (sign in again) or lack Contents: read & write on this repo.");
   const res = await fetch(url, {
     method: "PUT",
     headers: { ...headers(token), "Content-Type": "application/json" },

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useEffect } from "react";
 import { listLibrary, LIBRARY_REPO, type LibraryItem } from "../lib/library.ts";
+import { authConfigured } from "../lib/auth.ts";
 
 export interface RunPayload {
   text: string;
@@ -18,6 +19,8 @@ export default function InputForm({
   onApiKey,
   ghToken,
   onGhToken,
+  ghUser,
+  onSignIn,
   libraryTick,
   onOpenLibrary,
 }: {
@@ -27,6 +30,8 @@ export default function InputForm({
   onApiKey: (k: string) => void;
   ghToken: string;
   onGhToken: (t: string) => void;
+  ghUser: string | null;
+  onSignIn: () => void;
   libraryTick: number;
   onOpenLibrary: (name: string) => void;
 }) {
@@ -103,19 +108,32 @@ export default function InputForm({
         </span>
       </label>
 
-      <label className="field">
-        <span>GitHub token — to save every extraction to your library <em className="muted">(optional)</em></span>
-        <input
-          type="password"
-          placeholder="github_pat_…  (fine-grained: this repo only, Contents read & write)"
-          value={ghToken}
-          onChange={(e) => onGhToken(e.target.value)}
-          autoComplete="off"
-        />
+      <div className="field">
+        <span>GitHub — to save every extraction to your library <em className="muted">(optional)</em></span>
+        {ghToken ? (
+          <div className="signed-in">
+            <span>✓ Signed in{ghUser ? <> as <b>{ghUser}</b></> : null}</span>
+            <button type="button" className="ghost sm" onClick={() => onGhToken("")}>sign out</button>
+          </div>
+        ) : authConfigured() ? (
+          <button type="button" className="ghost" onClick={onSignIn}>Sign in with GitHub</button>
+        ) : null}
+        {!ghToken && (
+          <details className="advanced" open={!authConfigured()}>
+            <summary>{authConfigured() ? "or paste a token instead" : "paste a token"}</summary>
+            <input
+              type="password"
+              placeholder="github_pat_…  (fine-grained: this repo only, Contents read & write)"
+              value={ghToken}
+              onChange={(e) => onGhToken(e.target.value)}
+              autoComplete="off"
+            />
+          </details>
+        )}
         <span className="muted tiny">
-          Kept in memory only and sent only to api.github.com. Without it the site still works; graphs just aren&apos;t saved. Saved graphs are public in {LIBRARY_REPO}.
+          Kept in memory only (gone when you close the tab) and sent only to api.github.com. Without it the site still works; graphs just aren&apos;t saved. Saved graphs are public in {LIBRARY_REPO}.
         </span>
-      </label>
+      </div>
 
       <button className="run" type="submit" disabled={!canRun}>
         {busy ? "Extracting…" : "Extract graphs"}
