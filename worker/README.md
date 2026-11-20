@@ -1,6 +1,6 @@
 # mira-scope-auth — the sign-in helper
 
-A ~100-line Cloudflare Worker that finishes "Sign in with GitHub" for the static site (GitHub won't let a browser page swap the login code for a token). It stores nothing and logs nothing; the token goes straight back to the site's popup, addressed to one origin only. Tests: `node ../test-worker.mjs`-style checks live in the repo's history; the logic is in `index.js`.
+A ~100-line Cloudflare Worker that finishes "Sign in with GitHub" for the static site (GitHub won't let a browser page swap the login code for a token). It stores nothing and logs nothing; the token goes straight back to the site's popup, addressed to one origin only. The logic is all in `index.js`.
 
 ## One-time setup
 
